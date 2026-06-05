@@ -31,3 +31,5 @@
     <div class="footer-bottom">© 2026 StyleVibe. Bảo lưu mọi quyền.</div>
   </div>
 </footer>
+
+<script src="<?= $base_url ?>assets/js/cart.js"></script>
