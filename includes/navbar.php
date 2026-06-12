@@ -1,5 +1,10 @@
 <?php
 include_once(__DIR__ . "/../config/config.php");
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+$isLoggedIn = isset($_SESSION['user_id']);
+$currentUser = $isLoggedIn ? $_SESSION['user'] : null;
 ?>
 
 <nav class="nav">
@@ -42,14 +47,38 @@ include_once(__DIR__ . "/../config/config.php");
 
     <div class="nav-right">
 
-      <a
-        href="<?= $base_url ?>auth/auth.php"
-        class="nav-icon"
-        title="Đăng nhập">
+      <?php if ($isLoggedIn): ?>
+        <!-- Đã đăng nhập: hiện tên + dropdown -->
+        <div class="user-dropdown" id="userDropdown">
+          <button class="nav-user-btn" onclick="toggleUserMenu()">
+            <span class="nav-user-avatar"><?= mb_substr($currentUser['fullname'], 0, 1, 'UTF-8') ?></span>
+            <span class="nav-user-name"><?= htmlspecialchars($currentUser['fullname']) ?></span>
+            <span class="dropdown-arrow">▾</span>
+          </button>
+          <div class="user-dropdown-menu" id="userDropdownMenu">
+            <a href="<?= $base_url ?>profile.php" class="dropdown-item">
+              📋 Hồ sơ của tôi
+            </a>
+            <a href="<?= $base_url ?>orders/my_orders.php" class="dropdown-item">
+              📦 Đơn hàng
+            </a>
+            <div class="dropdown-divider"></div>
+            <a href="javascript:void(0)" class="dropdown-item" onclick="logoutFromNav()">
+              🚪 Đăng xuất
+            </a>
+          </div>
+        </div>
+      <?php else: ?>
+        <!-- Chưa đăng nhập -->
+        <a
+          href="<?= $base_url ?>auth/auth.php"
+          class="nav-icon"
+          title="Đăng nhập">
 
-        👤
+          👤
 
-      </a>
+        </a>
+      <?php endif; ?>
 
       <a
         href="<?= $base_url ?>cart/cart.php"
@@ -65,3 +94,31 @@ include_once(__DIR__ . "/../config/config.php");
 
   </div>
 </nav>
+
+<?php if ($isLoggedIn): ?>
+<script>
+function toggleUserMenu() {
+  const menu = document.getElementById('userDropdownMenu');
+  menu.classList.toggle('open');
+}
+
+// Đóng dropdown khi click ra ngoài
+document.addEventListener('click', function(e) {
+  const dropdown = document.getElementById('userDropdown');
+  if (dropdown && !dropdown.contains(e.target)) {
+    document.getElementById('userDropdownMenu').classList.remove('open');
+  }
+});
+
+async function logoutFromNav() {
+  try {
+    await fetch('<?= $base_url ?>api/auth.php', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'logout' })
+    });
+  } catch(e) {}
+  window.location.href = '<?= $base_url ?>auth/auth.php';
+}
+</script>
+<?php endif; ?>

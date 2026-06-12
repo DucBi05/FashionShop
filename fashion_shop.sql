@@ -67,3 +67,20 @@ CREATE TABLE IF NOT EXISTS order_items (
     FOREIGN KEY (order_id) REFERENCES orders(id) ON DELETE CASCADE,
     FOREIGN KEY (product_id) REFERENCES products(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================
+-- Bảng người dùng (users)
+-- ============================================
+CREATE TABLE IF NOT EXISTS users (
+    id              INT AUTO_INCREMENT PRIMARY KEY,
+    fullname        VARCHAR(100) NOT NULL,
+    email           VARCHAR(100) NOT NULL UNIQUE,
+    phone           VARCHAR(20) DEFAULT NULL,
+    password        VARCHAR(255) NOT NULL COMMENT 'Bcrypt hash',
+    address         TEXT DEFAULT NULL,
+    avatar          VARCHAR(255) DEFAULT NULL,
+    reset_token     VARCHAR(100) DEFAULT NULL COMMENT 'Token khôi phục mật khẩu',
+    reset_expires   DATETIME DEFAULT NULL COMMENT 'Hạn token',
+    created_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    updated_at      TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;

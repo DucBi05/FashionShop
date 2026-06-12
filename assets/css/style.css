@@ -285,3 +285,82 @@ footer{background:var(--primary);color:rgba(255,255,255,.8);padding:3rem 1rem 1.
   .admin-stats{grid-template-columns:1fr}
   .footer-grid{grid-template-columns:1fr}
 }
+
+/* ============================================ */
+/* AUTH ENHANCEMENTS                            */
+/* ============================================ */
+.btn-full{width:100%;justify-content:center;margin-top:.5rem}
+.auth-link{text-align:center;margin-top:1rem;font-size:.875rem;color:var(--muted)}
+.auth-link span{color:var(--accent);cursor:pointer;font-weight:500}
+.auth-link span:hover{text-decoration:underline}
+.auth-form-title{text-align:center;margin-bottom:1.5rem}
+.auth-form-title h3{font-size:1.1rem;margin-top:.5rem;margin-bottom:.25rem}
+
+/* Password toggle */
+.password-wrapper{position:relative;display:flex;align-items:center}
+.password-wrapper input{flex:1;padding-right:2.5rem}
+.toggle-pw{position:absolute;right:10px;cursor:pointer;font-size:1rem;user-select:none;line-height:1}
+
+/* Form messages */
+.form-error{display:none;color:#dc3545;font-size:.85rem;padding:.5rem .75rem;border-radius:8px;background:#fff5f5;border:1px solid #ffcdd2;margin-top:.5rem}
+.form-success{display:none;color:#198754;font-size:.85rem;padding:.5rem .75rem;border-radius:8px;background:#f0fff4;border:1px solid #c3e6cb;margin-top:.5rem}
+
+/* Shake animation for errors */
+@keyframes shake{0%,100%{transform:translateX(0)}20%,60%{transform:translateX(-6px)}40%,80%{transform:translateX(6px)}}
+.shake{animation:shake .4s ease}
+
+/* ============================================ */
+/* USER DROPDOWN (Navbar)                       */
+/* ============================================ */
+.user-dropdown{position:relative}
+.nav-user-btn{display:flex;align-items:center;gap:.5rem;background:rgba(255,255,255,.1);border:none;color:#fff;padding:.35rem .75rem;border-radius:50px;cursor:pointer;font-size:.875rem;transition:.2s}
+.nav-user-btn:hover{background:rgba(255,255,255,.2)}
+.nav-user-avatar{width:28px;height:28px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:.75rem;font-weight:700;color:#fff;flex-shrink:0}
+.nav-user-name{max-width:100px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.dropdown-arrow{font-size:.7rem;transition:.2s}
+.user-dropdown-menu{position:absolute;top:calc(100% + 8px);right:0;background:var(--white);border-radius:var(--radius);box-shadow:0 8px 30px rgba(0,0,0,.15);min-width:200px;padding:.5rem 0;z-index:1100;opacity:0;visibility:hidden;transform:translateY(-8px);transition:all .2s}
+.user-dropdown-menu.open{opacity:1;visibility:visible;transform:translateY(0)}
+.dropdown-item{display:flex;align-items:center;gap:.5rem;padding:.6rem 1rem;font-size:.875rem;color:var(--text);transition:.15s;cursor:pointer}
+.dropdown-item:hover{background:var(--gray);color:var(--accent)}
+.dropdown-divider{height:1px;background:var(--border);margin:.35rem 0}
+
+/* ============================================ */
+/* PROFILE PAGE                                 */
+/* ============================================ */
+.profile-page{max-width:1000px;margin:2rem auto;padding:0 1rem}
+.profile-container{display:grid;grid-template-columns:260px 1fr;gap:1.5rem;align-items:start}
+
+/* Profile Sidebar */
+.profile-sidebar{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.profile-avatar{text-align:center;padding:2rem 1.5rem 1.5rem;background:linear-gradient(135deg,var(--primary),#16213e);color:#fff}
+.avatar-circle{width:72px;height:72px;border-radius:50%;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:1.75rem;font-weight:700;color:#fff;margin:0 auto .75rem;border:3px solid rgba(255,255,255,.3)}
+.profile-avatar h3{font-size:1rem;margin-bottom:.25rem}
+.profile-avatar p{font-size:.8rem;color:rgba(255,255,255,.7)}
+
+/* Profile Nav */
+.profile-nav{padding:.5rem 0}
+.profile-nav-item{display:flex;align-items:center;gap:.5rem;padding:.75rem 1.25rem;font-size:.9rem;cursor:pointer;color:var(--text);transition:.15s;border-left:3px solid transparent}
+.profile-nav-item:hover{background:var(--gray);color:var(--accent)}
+.profile-nav-item.active{border-left-color:var(--accent);color:var(--accent);background:var(--gray);font-weight:600}
+
+/* Profile Content */
+.profile-tab{display:none}
+.profile-tab.active{display:block}
+
+.profile-card{background:var(--white);border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+.profile-card-header{padding:1.5rem 2rem 1rem;border-bottom:1px solid var(--border)}
+.profile-card-header h2{font-size:1.15rem;font-weight:700}
+.profile-card-header p{font-size:.85rem;color:var(--muted);margin-top:.25rem}
+.profile-card-body{padding:1.5rem 2rem 2rem}
+.profile-card-body .form-group textarea{resize:vertical;min-height:80px}
+
+/* Responsive profile */
+@media(max-width:768px){
+  .profile-container{grid-template-columns:1fr}
+  .profile-sidebar{display:flex;flex-direction:column}
+  .profile-nav{display:flex;overflow-x:auto;padding:.5rem}
+  .profile-nav-item{border-left:none;border-bottom:3px solid transparent;white-space:nowrap;padding:.5rem .75rem;font-size:.8rem}
+  .profile-nav-item.active{border-bottom-color:var(--accent);border-left:none}
+  .profile-card-body{padding:1.25rem}
+  .nav-user-name{display:none}
+}
