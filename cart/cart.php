@@ -93,7 +93,7 @@ $grand_total = $total - $discount + $ship;
                                     <img
                                         src="../assets/uploads/products/<?= htmlspecialchars($item['image']) ?>"
                                         alt="<?= htmlspecialchars($item['name']) ?>"
-                                        onerror="this.onerror=null;this.src='https://placehold.co/70x70?text=No+Image'"
+                                        onerror="this.onerror=null;this.src='https://placehold.co/70x70?text=No+Image'">
                                 </td>
 
                                 <td class="td-name">
