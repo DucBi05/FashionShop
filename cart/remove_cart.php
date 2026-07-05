@@ -4,7 +4,7 @@ include("../config/config.php");
 header('Content-Type: application/json');
 
 $product_id = (int)($_POST['product_id'] ?? 0);
-$session_id = session_id();
+$session_id = $_SESSION['user_id'];
 
 if ($product_id <= 0) {
     echo json_encode(['success' => false, 'message' => 'Dữ liệu không hợp lệ']);

@@ -34,11 +34,11 @@ $payment_label = $payment_labels[$order['payment_method']] ?? $order['payment_me
 
 // Map trạng thái
 $status_labels = [
-    'pending'   => ['⏳ Chờ xác nhận', 'status-pending'],
-    'confirmed' => ['✅ Đã xác nhận', 'status-active'],
-    'shipping'  => ['🚚 Đang giao hàng', 'status-pending'],
-    'delivered' => ['📦 Đã giao hàng', 'status-active'],
-    'cancelled' => ['❌ Đã hủy', 'status-sold']
+    'Pending'   => ['⏳ Chờ xác nhận', 'status-pending'],
+    'Confirmed' => ['✅ Đã xác nhận', 'status-active'],
+    'Shipping'  => ['🚚 Đang giao hàng', 'status-pending'],
+    'Delivered' => ['📦 Đã giao hàng', 'status-active'],
+    'Cancelled' => ['❌ Đã hủy', 'status-sold']
 ];
 $status_info = $status_labels[$order['status']] ?? ['Không rõ', 'status-pending'];
 ?>

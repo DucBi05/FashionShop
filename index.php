@@ -1,6 +1,5 @@
 <?php
 include("includes/navbar.php");
-include("config/config.php");
 
 $sql = "
     SELECT
@@ -22,7 +21,7 @@ $result = mysqli_query($conn, $sql);
 $sql = "
     SELECT *
     FROM products
-    ORDER BY created_at DESC
+    WHERE badge = 'best'
     LIMIT 4
 ";
 
@@ -48,8 +47,8 @@ $new_result = mysqli_query($conn, $sql);
       <h1>Thời Trang <span>Đỉnh Cao</span><br>Phong Cách Của Bạn</h1>
       <p>Khám phá bộ sưu tập thời trang & phụ kiện mới nhất. Đẳng cấp – Hiện đại – Độc đáo.</p>
       <div style="display:flex;gap:1rem;justify-content:center;flex-wrap:wrap">
-        <button class="btn btn-primary" onclick="showPage('shop')">Mua ngay 🛍️</button>
-        <button class="btn btn-outline" onclick="scrollToSection('featured')">Xem bộ sưu tập</button>
+        <a href="products/shop.php"><button class="btn btn-primary">Mua ngay 🛍️</button></a>
+        <a href="products/shop.php"><button class="btn btn-outline">Xem bộ sưu tập</button></a>
       </div>
       <div class="hero-badges">
         <span class="hero-badge">✅ Hàng chính hãng</span>
@@ -134,6 +133,10 @@ $new_result = mysqli_query($conn, $sql);
                         src="assets/uploads/products/<?= $product['image'] ?>"
                         alt="<?= $product['name'] ?>">
 
+                    <span class="new-badge">
+                        Bán chạy
+                    </span>
+
                 </div>
 
                 <div class="product-info">
@@ -158,7 +161,7 @@ $new_result = mysqli_query($conn, $sql);
 
                         <button
                             class="btn-cart"
-                            onclick="addToCart(<?= $product['id'] ?>)">
+                            data-product-id="<?= $product['id'] ?>">
 
                             🛒
 
@@ -177,11 +180,20 @@ $new_result = mysqli_query($conn, $sql);
 </div>
 
   <!-- Sale Section -->
-  <div style="background:linear-gradient(135deg,var(--accent),#c73650);padding:3rem 1rem;text-align:center;color:#fff;margin:2rem 0">
-    <h2 style="font-size:2rem;margin-bottom:0.5rem">🔥 FLASH SALE HÔM NAY</h2>
-    <p style="margin-bottom:1.5rem;opacity:.9">Giảm đến 50% – Chỉ còn <strong id="countdown">02:45:30</strong></p>
-    <button class="btn" style="background:#fff;color:var(--accent)" onclick="showPage('shop')">Xem ưu đãi ngay</button>
-  </div>
+    <div style="background:linear-gradient(135deg,var(--accent),#c73650);padding:3rem 1rem;text-align:center;color:#fff;margin:2rem 0">
+        <h2 style="font-size:2rem;margin-bottom:0.5rem">🔥 FLASH SALE HÔM NAY</h2>
+
+        <p style="margin-bottom:1.5rem;opacity:.9">
+            Giảm đến 50% – Chỉ còn
+            <strong id="countdown">00:00:00</strong>
+        </p>
+
+        <a href="products/shop.php?sort=discount">
+            <button class="btn" style="background:#fff;color:var(--accent)">
+                Xem ưu đãi ngay
+            </button>
+        </a>
+    </div>
 
 <!-- New Arrivals -->
 <div class="section">
@@ -217,7 +229,7 @@ $new_result = mysqli_query($conn, $sql);
 
                     <!-- NEW BADGE -->
                     <span class="new-badge">
-                        NEW
+                        Mới
                     </span>
 
                 </div>
@@ -245,7 +257,8 @@ $new_result = mysqli_query($conn, $sql);
 
                         <button
                             class="btn-cart"
-                            onclick="addToCart(<?= $product['id'] ?>)">
+                            id="btn-cart"
+                            data-product-id="<?= $product['id'] ?>">
 
                             🛒
 
@@ -262,6 +275,104 @@ $new_result = mysqli_query($conn, $sql);
     </div>
 
 </div>
+<div id="toast"></div>
+<script>
+document
+.querySelectorAll('.btn-cart')
+.forEach(btn => {
+    btn.addEventListener('click', function(e){
+
+    e.preventDefault();
+
+    const productId = this.dataset.productId;
+
+    fetch('cart/add_to_cart.php', {
+        method: 'POST',
+
+        headers: {
+        'Content-Type':
+        'application/x-www-form-urlencoded'
+        },
+
+        body:
+        'product_id=' + productId
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        if(data.status === 'login_required')
+        {
+        window.location.href =
+            'auth/auth.php';
+
+        return;
+        }
+
+        if(data.status === 'success'){
+
+        document
+        .getElementById('cartBadge')
+        .innerText =
+        data.cart_count;
+
+        showIndexToast(
+        '🛒 Đã thêm vào giỏ hàng'
+        );
+
+        }
+    })
+    });
+});
+
+function showIndexToast(message, type = 'success')
+{
+    const toast =
+      document.getElementById('toast');
+
+    toast.innerText = message;
+    toast.className = '';
+
+    if(type === 'error')
+    {
+      toast.classList.add('error');
+    }
+
+    toast.classList.add('show');
+
+    setTimeout(() => {
+
+      toast.classList.remove('show');
+
+    }, 2500);
+}
+
+const duration = 3 * 60 * 60 * 1000;
+
+const endTime = new Date().getTime() + duration;
+
+function updateCountdown() {
+    const now = new Date().getTime();
+    const distance = endTime - now;
+
+    if (distance <= 0) {
+        document.getElementById("countdown").innerHTML = "00:00:00";
+        clearInterval(timer);
+        return;
+    }
+
+    const hours = Math.floor(distance / (1000 * 60 * 60));
+    const minutes = Math.floor((distance % (1000 * 60 * 60)) / (1000 * 60));
+    const seconds = Math.floor((distance % (1000 * 60)) / 1000);
+
+    document.getElementById("countdown").innerHTML =
+        String(hours).padStart(2, "0") + ":" +
+        String(minutes).padStart(2, "0") + ":" +
+        String(seconds).padStart(2, "0");
+}
+
+updateCountdown();
+const timer = setInterval(updateCountdown, 1000);
+</script>
 
 <?php
 include("includes/footer.php");

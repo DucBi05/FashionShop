@@ -103,6 +103,39 @@ switch ($action) {
         break;
 
     // ============================================
+    // ĐỔI AVATAR
+    // ============================================
+    case 'upload_avatar':
+        if (!isset($_FILES['avatar'])) {
+            echo json_encode(['success' => false, 'message' => 'Vui lòng chọn ảnh']);
+            exit;
+        }
+
+        $file = $_FILES['avatar'];
+        $ext      = strtolower(pathinfo($file['name'], PATHINFO_EXTENSION));
+        $allowed  = ['jpg', 'jpeg', 'png', 'webp', 'gif'];
+
+        if (!in_array($ext, $allowed)) {
+            echo json_encode(['success' => false, 'message' => 'Định dạng không hợp lệ']);
+            exit;
+        }
+
+        if ($file['size'] > 2 * 1024 * 1024) {
+            echo json_encode(['success' => false, 'message' => 'Ảnh vượt quá 2MB']);
+            exit;
+        }
+
+        $result = $userModel->changeAvatar($userId, $file);
+
+        // Cập nhật session
+        if ($result['success'] && isset($result['user'])) {
+            $_SESSION['user'] = $result['user'];
+        }
+
+        echo json_encode($result);
+        break;
+
+    // ============================================
     // DEFAULT
     // ============================================
     default:

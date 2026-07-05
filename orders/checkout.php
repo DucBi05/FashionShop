@@ -2,24 +2,27 @@
 session_start();
 include("../includes/navbar.php");
 
-// Lấy giỏ hàng từ session
-$cart = isset($_SESSION['cart']) ? $_SESSION['cart'] : [];
-$cart_items = [];
+$session_id = $_SESSION['user_id'];
+
+$user_sql = "SELECT * FROM users WHERE id = '$session_id'";
+$user_result = mysqli_fetch_assoc(mysqli_query($conn, $user_sql));
+
+$sql = "
+    SELECT c.id as cart_id, c.quantity, p.*
+    FROM cart c
+    JOIN products p ON c.product_id = p.id
+    WHERE c.session_id = '$session_id'
+";
+$result     = mysqli_query($conn, $sql);
+
 $subtotal = 0;
 
 // Query thông tin sản phẩm trong giỏ
-if (!empty($cart)) {
-    $ids = implode(',', array_map('intval', array_keys($cart)));
-    $sql = "SELECT * FROM products WHERE id IN ($ids)";
-    $result = mysqli_query($conn, $sql);
-
-    while ($product = mysqli_fetch_assoc($result)) {
-        $qty = $cart[$product['id']];
-        $product['quantity'] = $qty;
-        $product['line_total'] = $product['price'] * $qty;
-        $subtotal += $product['line_total'];
-        $cart_items[] = $product;
-    }
+while ($product = mysqli_fetch_assoc($result)) {
+    $qty = $product['quantity'];
+    $product['line_total'] = $product['price'] * $qty;
+    $subtotal += $product['line_total'];
+    $cart_items[] = $product;
 }
 
 // Tính phí ship
@@ -44,7 +47,7 @@ $total = $subtotal + $shipping_fee;
                     type="text"
                     name="customer_name"
                     id="customerName"
-                    placeholder="Nguyễn Văn A"
+                    <?= $user_result['fullname'] ? 'value="' . htmlspecialchars($user_result['fullname']) . '"' : 'placeholder="*Nhập họ và tên*"' ?>
                     required>
             </div>
 
@@ -55,7 +58,7 @@ $total = $subtotal + $shipping_fee;
                     type="tel"
                     name="customer_phone"
                     id="customerPhone"
-                    placeholder="0912 345 678"
+                    <?= $user_result['phone'] ? 'value="' . htmlspecialchars($user_result['phone']) . '"' : 'placeholder="*Nhập số điện thoại*"' ?>
                     required>
             </div>
 
@@ -66,24 +69,22 @@ $total = $subtotal + $shipping_fee;
                     type="email"
                     name="customer_email"
                     id="customerEmail"
-                    placeholder="email@example.com">
+                    <?= $user_result['email'] ? 'value="' . htmlspecialchars($user_result['email']) . '"' : 'placeholder="Nhập email (nếu có)"' ?>>
             </div>
 
             <!-- Tỉnh / Quận -->
             <div class="form-row">
                 <div class="form-group">
-                    <label>Tỉnh / Thành phố</label>
-                    <input
-                        type="text"
-                        name="city"
-                        placeholder="TP. Hồ Chí Minh">
+                    <label>Tỉnh / Thành phố <span style="color:var(--accent)">*</span></label>
+                    <select name="city" id="citySelect" required onchange="loadDistricts(this.value)">
+                        <option value="">Đang tải...</option>
+                    </select>
                 </div>
                 <div class="form-group">
-                    <label>Quận / Huyện</label>
-                    <input
-                        type="text"
-                        name="district"
-                        placeholder="Quận 1">
+                    <label>Quận / Huyện <span style="color:var(--accent)">*</span></label>
+                    <select name="district" id="districtSelect" required disabled>
+                        <option value="">Vui lòng chọn tỉnh/thành phố</option>
+                    </select>
                 </div>
             </div>
 
@@ -187,7 +188,7 @@ $total = $subtotal + $shipping_fee;
 
             <!-- Tổng kết -->
             <div class="summary-row" style="margin-top:0.75rem">
-                <span>Tạm tính (<?= array_sum($cart) ?> sản phẩm)</span>
+                <span>Tạm tính (<?= count($cart_items) ?> sản phẩm)</span>
                 <span><?= number_format($subtotal) ?>đ</span>
             </div>
 
@@ -220,15 +221,97 @@ $total = $subtotal + $shipping_fee;
 
 <!-- JS validate -->
 <script>
+let provinceList = [];
+
 function selectPayment(el, method) {
     document.querySelectorAll('.pay-opt').forEach(p => p.classList.remove('active'));
     el.classList.add('active');
     el.querySelector('input[type=radio]').checked = true;
 }
 
+document.addEventListener('DOMContentLoaded', loadProvinces);
+
+async function loadProvinces() {
+    const citySelect = document.getElementById('citySelect');
+    const districtSelect = document.getElementById('districtSelect');
+
+    if (!citySelect) return;
+
+    citySelect.innerHTML = '<option value="">Đang tải...</option>';
+
+    try {
+        const response = await fetch('https://provinces.open-api.vn/api/p/');
+        provinceList = await response.json();
+
+        citySelect.innerHTML = '<option value="">Chọn tỉnh/thành phố</option>';
+        provinceList.forEach(province => {
+            const option = document.createElement('option');
+            option.value = province.name;
+            option.textContent = province.name;
+            citySelect.appendChild(option);
+        });
+
+        districtSelect.innerHTML = '<option value="">Vui lòng chọn tỉnh/thành phố</option>';
+
+        const currentValue = '<?= addslashes($user_result['address'] ?? '') ?>';
+        if (currentValue) {
+            const existingOption = Array.from(citySelect.options).some(option => option.value === currentValue);
+            if (!existingOption) {
+                citySelect.add(new Option(currentValue, currentValue));
+            }
+            citySelect.value = currentValue;
+
+            await loadDistricts(currentValue);
+        }
+    } catch (error) {
+        citySelect.innerHTML = '<option value="">Không tải được dữ liệu</option>';
+        districtSelect.innerHTML = '<option value="">Không tải được dữ liệu</option>';
+    }
+}
+
+async function loadDistricts(provinceName) {
+    const districtSelect = document.getElementById('districtSelect');
+
+    if (!districtSelect) return;
+
+    if (!provinceName) {
+        districtSelect.innerHTML = '<option value="">Vui lòng chọn tỉnh/thành phố</option>';
+        districtSelect.disabled = true;
+        return;
+    }
+
+    districtSelect.disabled = true;
+    districtSelect.innerHTML = '<option value="">Đang tải...</option>';
+
+    try {
+        const province = provinceList.find(item => item.name === provinceName);
+        if (!province) {
+            districtSelect.innerHTML = '<option value="">Không tìm thấy quận/huyện</option>';
+            return;
+        }
+
+        const response = await fetch(`https://provinces.open-api.vn/api/p/${province.code}?depth=2`);
+        const data = await response.json();
+
+        districtSelect.innerHTML = '<option value="">Chọn quận/huyện</option>';
+        (data.districts || []).forEach(district => {
+            const option = document.createElement('option');
+            option.value = district.name;
+            option.textContent = district.name;
+            districtSelect.appendChild(option);
+        });
+
+        districtSelect.disabled = false;
+    } catch (error) {
+        districtSelect.innerHTML = '<option value="">Không tải được dữ liệu</option>';
+    }
+}
+
 function validateCheckout() {
     const name = document.getElementById('customerName').value.trim();
     const phone = document.getElementById('customerPhone').value.trim();
+    const city = document.getElementById('citySelect').value.trim();
+    const district = document.getElementById('districtSelect').value.trim();
     const address = document.getElementById('shippingAddress').value.trim();
 
     if (!name) {
@@ -248,6 +331,18 @@ function validateCheckout() {
     if (!phoneRegex.test(phone.replace(/\s/g, ''))) {
         alert('Số điện thoại không hợp lệ! (VD: 0912345678)');
         document.getElementById('customerPhone').focus();
+        return false;
+    }
+
+    if (!city) {
+        alert('Vui lòng chọn tỉnh/thành phố!');
+        document.getElementById('citySelect').focus();
+        return false;
+    }
+
+    if (!district) {
+        alert('Vui lòng chọn quận/huyện!');
+        document.getElementById('districtSelect').focus();
         return false;
     }
 

@@ -33,6 +33,10 @@ class UserModel {
 
         if ($stmt->execute()) {
             $userId = $stmt->insert_id;
+            $notificationMessage = "$fullname vừa đăng ký tài khoản mới.";
+            $stmt = $this->conn->prepare("INSERT INTO notifications (user_id, message) VALUES (?, ?)");
+            $stmt->bind_param("is", $userId, $notificationMessage);
+            $stmt->execute();
             $stmt->close();
             return [
                 'success' => true,
@@ -176,6 +180,8 @@ class UserModel {
             return ['success' => false, 'message' => 'Email không tồn tại trong hệ thống'];
         }
 
+        date_default_timezone_set('Asia/Ho_Chi_Minh');
+
         // Tạo token ngẫu nhiên
         $token = bin2hex(random_bytes(32));
         $expires = date('Y-m-d H:i:s', strtotime('+1 hour'));
@@ -228,6 +234,29 @@ class UserModel {
 
         $stmt->close();
         return ['success' => false, 'message' => 'Lỗi đặt lại mật khẩu'];
+    }
+
+    public function changeAvatar($id, $avatarPath) {
+        $ext = strtolower(pathinfo($avatarPath['name'], PATHINFO_EXTENSION));
+        $filename = 'avatar_' . $id . '_' . time() . '.' . $ext;
+        $uploadDir = __DIR__ . '/../admin/assets/uploads/users/';
+        $uploadPath = $uploadDir . $filename;
+
+        if (!is_dir($uploadDir)) mkdir($uploadDir, 0777, true);
+        
+        if (move_uploaded_file($avatarPath['tmp_name'], $uploadPath)) {
+            $sql = "UPDATE users SET avatar = ? WHERE id = ?";
+            $stmt = $this->conn->prepare($sql);
+            $stmt->bind_param("si", $filename, $id);
+            $stmt->execute();
+
+            $_SESSION['user']['avatar'] = $filename; // Cập nhật session
+
+            $stmt->close();
+            return ['success' => true, 'message' => 'Cập nhật avatar thành công', 'user' => $this->getUserById($id)];
+        } else {
+            return ['success' => false, 'message' => 'Lỗi tải lên ảnh'];
+        }
     }
 }
 ?>

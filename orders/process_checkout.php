@@ -13,7 +13,16 @@ if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
 // ============================
 // Kiểm tra giỏ hàng có sản phẩm không
 // ============================
-if (!isset($_SESSION['cart']) || empty($_SESSION['cart'])) {
+$user_id = $_SESSION['user_id'] ?? null;
+if (!$user_id) {
+    header("Location: login.php");
+    exit;
+}
+$sql = "SELECT * FROM cart WHERE session_id = " . (int)$user_id;
+$result = mysqli_query($conn, $sql);
+$cart = mysqli_fetch_all($result, MYSQLI_ASSOC);
+
+if (empty($cart)) {
     header("Location: checkout.php");
     exit;
 }
@@ -63,17 +72,14 @@ if (!empty($errors)) {
 // ============================
 // Tính toán đơn hàng
 // ============================
-$cart = $_SESSION['cart'];
-$cart_items = [];
 $subtotal = 0;
 
 // Lấy thông tin sản phẩm từ DB
-$ids = implode(',', array_map('intval', array_keys($cart)));
-$sql = "SELECT * FROM products WHERE id IN ($ids)";
+$sql = "SELECT * FROM products WHERE id IN (" . implode(',', array_column($cart, 'product_id')) . ")";
 $result = mysqli_query($conn, $sql);
 
 while ($product = mysqli_fetch_assoc($result)) {
-    $qty = (int)$cart[$product['id']];
+    $qty = $cart[array_search($product['id'], array_column($cart, 'product_id'))]['quantity'];
     $product['quantity'] = $qty;
     $product['line_total'] = $product['price'] * $qty;
     $subtotal += $product['line_total'];
@@ -89,9 +95,9 @@ $total = $subtotal + $shipping_fee;
 // ============================
 $sql_order = "
     INSERT INTO orders
-        (customer_name, customer_phone, customer_email, shipping_address, city, district, note, payment_method, subtotal, shipping_fee, total, status)
+        (user_id, customer_name, customer_phone, customer_email, shipping_address, city, district, note, payment_method, subtotal, shipping_fee, total, status)
     VALUES
-        ('$customer_name', '$customer_phone', '$customer_email', '$shipping_address', '$city', '$district', '$note', '$payment_method', $subtotal, $shipping_fee, $total, 'pending')
+        ('$user_id', '$customer_name', '$customer_phone', '$customer_email', '$shipping_address', '$city', '$district', '$note', '$payment_method', $subtotal, $shipping_fee, $total, 'Pending')
 ";
 
 $order_result = mysqli_query($conn, $sql_order);
@@ -103,9 +109,6 @@ if (!$order_result) {
 // Lấy ID đơn hàng vừa tạo
 $order_id = mysqli_insert_id($conn);
 
-// ============================
-// Lưu vào database — Bảng order_items
-// ============================
 foreach ($cart_items as $item) {
     $product_id    = (int)$item['id'];
     $product_name  = mysqli_real_escape_string($conn, $item['name']);
@@ -113,20 +116,37 @@ foreach ($cart_items as $item) {
     $price         = (int)$item['price'];
     $quantity      = (int)$item['quantity'];
 
+    // Lưu vào database — Bảng order_items
     $sql_item = "
         INSERT INTO order_items
             (order_id, product_id, product_name, product_image, price, quantity)
         VALUES
             ($order_id, $product_id, '$product_name', '$product_image', $price, $quantity)
     ";
-
     mysqli_query($conn, $sql_item);
+
+    // Cập nhật lại stock của sản phẩm
+    $sql_update_stock = "
+        UPDATE products
+        SET stock = stock - $quantity
+        WHERE id = $product_id
+    ";
+    mysqli_query($conn, $sql_update_stock);
+
+    // Cập nhật số lượng đã bán
+    $sql_update_sold = "
+        UPDATE products
+        SET sold = sold + $quantity
+        WHERE id = $product_id
+    ";
+    mysqli_query($conn, $sql_update_sold);
 }
 
 // ============================
 // Xóa giỏ hàng sau khi đặt thành công
 // ============================
-unset($_SESSION['cart']);
+$sql_delete_cart = "DELETE FROM cart WHERE session_id = '" . mysqli_real_escape_string($conn, $user_id) . "'";
+mysqli_query($conn, $sql_delete_cart); 
 
 // ============================
 // Chuyển đến trang thành công

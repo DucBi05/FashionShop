@@ -19,9 +19,18 @@ if (!isset($_SESSION['user_id'])) {
     <!-- ============================================ -->
     <div class="profile-sidebar">
       <div class="profile-avatar">
-        <div class="avatar-circle" id="profileAvatarCircle">
-          <?= mb_substr($_SESSION['user']['fullname'], 0, 1, 'UTF-8') ?>
+        <div class="avatar-circle" id="profileAvatarCircle" onclick="document.getElementById('avatarInput').click()" style="cursor:pointer; position:relative; overflow:hidden;">
+          
+          <?= $_SESSION['user']['avatar'] ? '<img src="' . $base_url . 'assets/uploads/users/' . $_SESSION['user']['avatar'] . '" alt="avatar">' : mb_substr($_SESSION['user']['fullname'], 0, 1, 'UTF-8') ?>
+
+          <div class="avatar-overlay">📷</div>
+
         </div>
+
+        <input type="file" id="avatarInput" accept="image/*" hidden onchange="doUploadAvatar(this)">
+
+        <small style="color:#888; margin-top:4px;">Nhấn vào ảnh để thay đổi</small>
+
         <h3 id="sidebarName"><?= htmlspecialchars($_SESSION['user']['fullname']) ?></h3>
         <p id="sidebarEmail"><?= htmlspecialchars($_SESSION['user']['email']) ?></p>
       </div>
@@ -64,7 +73,7 @@ if (!isset($_SESSION['user_id'])) {
             <div class="form-row">
               <div class="form-group">
                 <label>Số điện thoại</label>
-                <input type="tel" id="profilePhone" placeholder="0912 345 678">
+                <input type="tel" id="profilePhone" placeholder="*Chưa có thông tin*">
               </div>
               <div class="form-group">
                 <label>Ngày tham gia</label>
@@ -72,8 +81,12 @@ if (!isset($_SESSION['user_id'])) {
               </div>
             </div>
             <div class="form-group">
-              <label>Địa chỉ</label>
-              <textarea id="profileAddress" rows="3" placeholder="Nhập địa chỉ giao hàng mặc định"></textarea>
+              <label>Tỉnh / Thành phố</label>
+              <select id="profileAddress" class="form-control" required>
+                <option <?= !empty($currentUser['address']) ? 'value="' . htmlspecialchars($currentUser['address']) . '"' : '' ?>>
+                  <?= !empty($currentUser['address']) ? htmlspecialchars($currentUser['address']) : 'Chọn tỉnh/thành phố' ?>
+                </option>
+              </select>
             </div>
             <div id="profileError" class="form-error"></div>
             <div id="profileSuccess" class="form-success"></div>
@@ -137,7 +150,28 @@ const BASE_URL = '<?= $base_url ?>';
 // ============================================
 // LOAD PROFILE KHI MỞ TRANG
 // ============================================
-document.addEventListener('DOMContentLoaded', loadProfile);
+document.addEventListener('DOMContentLoaded', () => {
+  loadProvinces();
+  loadProfile();
+});
+
+async function loadProvinces() {
+  const select = document.getElementById('profileAddress');
+  if (!select) return;
+
+  try {
+    const response = await fetch('https://provinces.open-api.vn/api/p/');
+    const provinces = await response.json();
+    provinces.forEach(province => {
+      const option = document.createElement('option');
+      option.value = province.name;
+      option.textContent = province.name;
+      select.appendChild(option);
+    });
+  } catch (error) {
+    select.innerHTML = '<option value="">Không tải được dữ liệu</option>';
+  }
+}
 
 async function loadProfile() {
   try {
@@ -148,7 +182,16 @@ async function loadProfile() {
       document.getElementById('profileFullname').value = u.fullname || '';
       document.getElementById('profileEmail').value = u.email || '';
       document.getElementById('profilePhone').value = u.phone || '';
-      document.getElementById('profileAddress').value = u.address || '';
+      const addressSelect = document.getElementById('profileAddress');
+      if (addressSelect) {
+        const savedAddress = u.address || '';
+        const existingOption = Array.from(addressSelect.options).some(option => option.value === savedAddress);
+        if (savedAddress && !existingOption) {
+          const option = new Option(savedAddress, savedAddress);
+          addressSelect.add(option);
+        }
+        addressSelect.value = savedAddress;
+      }
       document.getElementById('profileCreatedAt').value = formatDate(u.created_at);
     } else if (result.redirect) {
       window.location.href = BASE_URL + result.redirect;
@@ -184,10 +227,12 @@ async function doUpdateProfile() {
 
     if (result.success) {
       showSuccess('profileSuccess', result.message);
-      showToast('Cập nhật thành công!');
+      showProfileToast('Cập nhật thành công!');
       // Cập nhật sidebar
       document.getElementById('sidebarName').textContent = fullname;
-      document.getElementById('profileAvatarCircle').textContent = fullname.charAt(0).toUpperCase();
+      if (!document.getElementById('profileAvatarCircle').querySelector('img')) {
+        document.getElementById('profileAvatarCircle').textContent = fullname.charAt(0).toUpperCase();
+      }
     } else {
       showError('profileError', result.message);
     }
@@ -234,7 +279,7 @@ async function doChangePassword() {
 
     if (result.success) {
       showSuccess('pwSuccess', result.message);
-      showToast('Đổi mật khẩu thành công!');
+      showProfileToast('Đổi mật khẩu thành công!');
       // Clear inputs
       document.getElementById('oldPassword').value = '';
       document.getElementById('newPassword').value = '';
@@ -320,17 +365,69 @@ function setLoading(btnId, loading) {
   loader.style.display = loading ? 'inline' : 'none';
 }
 
-function showToast(message, type = 'success') {
+let toastTimeout = null;
+function showProfileToast(message, type = 'success') {
   const toast = document.getElementById('profileToast');
   toast.textContent = (type === 'success' ? '✅ ' : '❌ ') + message;
   toast.className = `toast ${type} show`;
-  setTimeout(() => toast.classList.remove('show'), 3000);
+
+  // Clear timeout cũ nếu còn đang chạy
+  if (toastTimeout) clearTimeout(toastTimeout);
+
+  toastTimeout = setTimeout(() => toast.classList.remove('show'), 3000);
 }
 
 function formatDate(dateStr) {
   if (!dateStr) return '';
   const d = new Date(dateStr);
   return d.toLocaleDateString('vi-VN', { year: 'numeric', month: '2-digit', day: '2-digit' });
+}
+
+async function doUploadAvatar(input) {
+    const file = input.files[0];
+    if (!file) return;
+
+    // Kiểm tra định dạng và kích thước
+    if (!file.type.startsWith('image/')) {
+            showProfileToast('Vui lòng chọn file ảnh', 'error');
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+            showProfileToast('Ảnh không được vượt quá 2MB', 'error');
+    }
+
+    // Preview ngay lập tức
+    const reader = new FileReader();
+    reader.onload = function(e) {
+        const circle = document.getElementById('profileAvatarCircle');
+        // Xóa text chữ cái, thêm ảnh
+        circle.innerHTML = `
+            <img src="${e.target.result}" alt="avatar">
+            <div class="avatar-overlay">📷</div>
+        `;
+    };
+    reader.readAsDataURL(file);
+
+    // Upload lên server
+    const formData = new FormData();
+    formData.append('action', 'upload_avatar');
+    formData.append('avatar', file);
+
+    try {
+        const response = await fetch(BASE_URL + 'api/profile.php', {
+            method: 'POST',
+            body: formData
+        });
+        const result = await response.json();
+
+        if (result.success) {
+            showProfileToast('Cập nhật ảnh thành công!');
+        } else {
+            showProfileToast(result.message || 'Upload thất bại', 'error');
+        }
+    } catch (err) {
+        showProfileToast('Lỗi kết nối server', 'error');
+    }
 }
 </script>
 

@@ -5,13 +5,33 @@ if (session_status() === PHP_SESSION_NONE) {
 }
 $isLoggedIn = isset($_SESSION['user_id']);
 $currentUser = $isLoggedIn ? $_SESSION['user'] : null;
+
+$cart_count = 0;
+
+if(isset($_SESSION['user_id']))
+{
+  $uid = $_SESSION['user_id'];
+
+  $rs = mysqli_query(
+    $conn,
+    "
+    SELECT SUM(quantity) total
+    FROM cart
+    WHERE session_id = $uid
+    "
+  );
+
+  $cart_count =
+    mysqli_fetch_assoc($rs)['total']
+    ?? 0;
+}
 ?>
 
 <nav class="nav">
   <div class="nav-inner">
 
     <div class="logo">
-      Style<span>Vibe</span>
+      Fashion<span>Shop</span>
     </div>
 
     <div class="nav-links">
@@ -51,7 +71,10 @@ $currentUser = $isLoggedIn ? $_SESSION['user'] : null;
         <!-- Đã đăng nhập: hiện tên + dropdown -->
         <div class="user-dropdown" id="userDropdown">
           <button class="nav-user-btn" onclick="toggleUserMenu()">
-            <span class="nav-user-avatar"><?= mb_substr($currentUser['fullname'], 0, 1, 'UTF-8') ?></span>
+            <span class="nav-user-avatar">
+              <?= $currentUser['avatar'] ? '<img src="' . $base_url . 'assets/uploads/users/' . $currentUser['avatar'] . '" alt="avatar">' 
+              : mb_substr($currentUser['fullname'], 0, 1, 'UTF-8') ?>
+            </span>
             <span class="nav-user-name"><?= htmlspecialchars($currentUser['fullname']) ?></span>
             <span class="dropdown-arrow">▾</span>
           </button>
@@ -61,6 +84,9 @@ $currentUser = $isLoggedIn ? $_SESSION['user'] : null;
             </a>
             <a href="<?= $base_url ?>orders/my_orders.php" class="dropdown-item">
               📦 Đơn hàng
+            </a>
+            <a href="<?= $base_url ?>wishlist/wishlist.php" class="dropdown-item">
+              ❤️ Yêu thích
             </a>
             <div class="dropdown-divider"></div>
             <a href="javascript:void(0)" class="dropdown-item" onclick="logoutFromNav()">
@@ -86,7 +112,7 @@ $currentUser = $isLoggedIn ? $_SESSION['user'] : null;
         title="Giỏ hàng">
 
         🛒
-        <span class="badge" id="cartBadge">0</span>
+        <span class="badge" id="cartBadge"><?= $cart_count ?></span>
 
       </a>
 

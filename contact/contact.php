@@ -11,7 +11,7 @@ include("../includes/navbar.php");
         <div class="contact-info">
           <div class="info-card"><div class="info-icon">📍</div><div><strong>Địa chỉ</strong><p style="font-size:.875rem;color:var(--muted);margin-top:.25rem">123 Nguyễn Huệ, Quận 1, TP.HCM</p></div></div>
           <div class="info-card"><div class="info-icon">📞</div><div><strong>Điện thoại</strong><p style="font-size:.875rem;color:var(--muted);margin-top:.25rem">0901 234 567 (8:00–22:00)</p></div></div>
-          <div class="info-card"><div class="info-icon">✉️</div><div><strong>Email</strong><p style="font-size:.875rem;color:var(--muted);margin-top:.25rem">hello@stylevibe.vn</p></div></div>
+          <div class="info-card"><div class="info-icon">✉️</div><div><strong>Email</strong><p style="font-size:.875rem;color:var(--muted);margin-top:.25rem">hello@fashionshop.vn</p></div></div>
           <div class="info-card"><div class="info-icon">🕐</div><div><strong>Giờ làm việc</strong><p style="font-size:.875rem;color:var(--muted);margin-top:.25rem">Thứ 2 – Chủ nhật: 8:00 – 22:00</p></div></div>
         </div>
         <div id="map"></div>

@@ -5,7 +5,7 @@ header('Content-Type: application/json');
 
 $product_id = (int)($_POST['product_id'] ?? 0);
 $change     = (int)($_POST['change']     ?? 0);
-$session_id = session_id();
+$session_id = $_SESSION['user_id'];
 
 $res     = mysqli_query($conn, "SELECT * FROM cart WHERE product_id = $product_id AND session_id = '$session_id'");
 $item    = mysqli_fetch_assoc($res);

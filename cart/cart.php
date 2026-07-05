@@ -3,7 +3,12 @@ session_start();
 include("../config/config.php");
 include("../includes/navbar.php");
 
-$session_id = session_id();
+if (!isset($_SESSION['user_id'])) {
+    header("Location: ../auth/auth.php");
+    exit;
+}
+
+$session_id = $_SESSION['user_id'];
 $total      = 0;
 $discount   = 0;
 
@@ -93,7 +98,7 @@ $grand_total = $total - $discount + $ship;
                                     <img
                                         src="../assets/uploads/products/<?= htmlspecialchars($item['image']) ?>"
                                         alt="<?= htmlspecialchars($item['name']) ?>"
-                                        onerror="this.onerror=null;this.src='https://placehold.co/70x70?text=No+Image'"
+                                        onerror="this.onerror=null;this.src='https://placehold.co/70x70?text=No+Image'">
                                 </td>
 
                                 <td class="td-name">

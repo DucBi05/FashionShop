@@ -42,7 +42,7 @@ function changeQty(productId, change) {
     const row = document.getElementById('row-' + productId);
     if (row) row.classList.add('loading');
 
-    fetch('/FashionShop/cart/update_cart.php', {
+    fetch('/fashion-shop/cart/update_cart.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: `product_id=${productId}&change=${change}`
@@ -71,7 +71,7 @@ function removeItem(productId) {
     const row = document.getElementById('row-' + productId);
     if (row) row.classList.add('loading');
 
-    fetch('/FashionShop/cart/remove_cart.php', {
+    fetch('/fashion-shop/cart/remove_cart.php', {
         method: 'POST',
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
         body: `product_id=${productId}`
